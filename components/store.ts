@@ -157,6 +157,14 @@ export function addLink(input: {
   return link;
 }
 
+/** 링크를 삭제한다. */
+export function deleteLink(linkId: string) {
+  setState({
+    ...state,
+    links: state.links.filter((link) => link.id !== linkId),
+  });
+}
+
 // ── 훅 ───────────────────────────────────────────────
 
 /** 현재 폴더 목록을 구독한다. */
