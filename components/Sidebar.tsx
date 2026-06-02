@@ -8,13 +8,19 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useFolders, useLinks, reorderFolders } from "./store";
+import DeleteFolderModal from "./DeleteFolderModal";
+import type { Folder } from "@/app/lib/mock-data";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const folders = useFolders();
   const links = useLinks();
+
+  // 삭제 확인 모달 대상 폴더 (null이면 닫힘)
+  const [pendingDelete, setPendingDelete] = useState<Folder | null>(null);
 
   // 폴더별 링크 개수
   const countOf = (folderId: string) =>
@@ -113,11 +119,27 @@ export default function Sidebar() {
                 onHandlePointerDown={(e) => handlePointerDown(e, index)}
                 onHandlePointerMove={handlePointerMove}
                 onHandlePointerUp={handlePointerUp}
+                onDelete={() => setPendingDelete(folder)}
               />
             </div>
           );
         })}
       </nav>
+
+      {/* 삭제 확인 모달 */}
+      {pendingDelete && (
+        <DeleteFolderModal
+          folder={pendingDelete}
+          linkCount={countOf(pendingDelete.id)}
+          onClose={() => setPendingDelete(null)}
+          onDeleted={(deletedId) => {
+            // 삭제한 폴더 페이지를 보고 있었다면 전체 화면으로 이동
+            if (pathname === `/folder/${deletedId}`) {
+              router.push("/");
+            }
+          }}
+        />
+      )}
     </aside>
   );
 }
@@ -157,6 +179,7 @@ interface FolderRowProps extends SidebarLinkProps {
   onHandlePointerDown: (e: React.PointerEvent) => void;
   onHandlePointerMove: (e: React.PointerEvent) => void;
   onHandlePointerUp: (e: React.PointerEvent) => void;
+  onDelete: () => void;
 }
 
 function FolderRow({
@@ -168,6 +191,7 @@ function FolderRow({
   onHandlePointerDown,
   onHandlePointerMove,
   onHandlePointerUp,
+  onDelete,
 }: FolderRowProps) {
   return (
     <div className="group flex items-center gap-1">
@@ -218,6 +242,37 @@ function FolderRow({
           {count}
         </span>
       </Link>
+
+      {/* 삭제 버튼 — 행에 마우스를 올리면 폴더 이름 우측에 나타난다 */}
+      <button
+        type="button"
+        aria-label={`${label} 폴더 삭제`}
+        title="폴더 삭제"
+        onClick={onDelete}
+        className={`flex shrink-0 items-center justify-center rounded-md p-1 text-[var(--placeholder)] transition-opacity hover:text-[var(--error)] ${
+          dragging
+            ? "pointer-events-none opacity-0"
+            : "opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M2.5 4h11" />
+          <path d="M6 4V2.8a.8.8 0 0 1 .8-.8h2.4a.8.8 0 0 1 .8.8V4" />
+          <path d="M12.5 4l-.6 8.3a1.2 1.2 0 0 1-1.2 1.1H5.3a1.2 1.2 0 0 1-1.2-1.1L3.5 4" />
+          <path d="M6.5 7v3.8" />
+          <path d="M9.5 7v3.8" />
+        </svg>
+      </button>
     </div>
   );
 }

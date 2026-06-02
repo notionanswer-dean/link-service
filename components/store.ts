@@ -83,6 +83,15 @@ export function addFolder(name: string): Folder {
   return folder;
 }
 
+/** 폴더와 그 폴더에 담긴 링크를 모두 삭제한다. */
+export function deleteFolder(folderId: string) {
+  setState({
+    ...state,
+    folders: state.folders.filter((folder) => folder.id !== folderId),
+    links: state.links.filter((link) => link.folderId !== folderId),
+  });
+}
+
 /** fromIndex 폴더를 toIndex 위치로 이동한다. */
 export function reorderFolders(fromIndex: number, toIndex: number) {
   const { folders } = state;
