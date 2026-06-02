@@ -1,15 +1,16 @@
 "use client";
 
 // 새 링크 입력 폼: 링크 주소 인풋 + 폴더 선택 셀렉트 + 저장/취소 버튼
-// UI 데모이므로 실제 저장 대신 알림 후 목록으로 이동한다.
+// 저장 시 공유 스토어에 링크를 추가하고 선택한 폴더로 이동한다.
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import { folders } from "@/app/lib/mock-data";
+import { useFolders, addLink } from "./store";
 
 export default function NewLinkForm() {
   const router = useRouter();
+  const folders = useFolders();
   const [url, setUrl] = useState("");
   const [folderId, setFolderId] = useState(folders[0]?.id ?? "");
 
@@ -21,10 +22,9 @@ export default function NewLinkForm() {
       return;
     }
 
-    const folderName = folders.find((f) => f.id === folderId)?.name ?? "";
-    // 실제 저장 로직 대신 데모용 알림
-    alert(`저장되었습니다 (UI 데모)\n링크: ${url}\n폴더: ${folderName}`);
-    router.push("/");
+    // 스토어에 실제로 추가한 뒤 해당 폴더로 이동해 결과를 보여준다
+    addLink({ url: url.trim(), folderId });
+    router.push(folderId ? `/folder/${folderId}` : "/");
   }
 
   return (

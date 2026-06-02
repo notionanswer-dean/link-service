@@ -2,6 +2,7 @@
 // 모든 페이지가 공유하므로 루트 레이아웃에서 렌더링된다.
 
 import Link from "next/link";
+import NewFolderButton from "@/components/NewFolderButton";
 
 export default function Header() {
   return (
@@ -17,16 +18,19 @@ export default function Header() {
         한입 링크
       </Link>
 
-      {/* 우측: 새 링크 추가 페이지로 이동 */}
-      <Link
-        href="/new"
-        className="btn-primary inline-flex items-center gap-1.5 px-4 py-2.5 text-sm"
-      >
-        <span aria-hidden className="text-base leading-none">
-          +
-        </span>
-        새 링크
-      </Link>
+      {/* 우측: 새 폴더(모달) + 새 링크(페이지 이동) */}
+      <div className="flex items-center gap-2">
+        <NewFolderButton />
+        <Link
+          href="/new"
+          className="btn-primary inline-flex items-center gap-1.5 px-4 py-2.5 text-sm"
+        >
+          <span aria-hidden className="text-base leading-none">
+            +
+          </span>
+          새 링크
+        </Link>
+      </div>
     </header>
   );
 }

@@ -1,21 +1,81 @@
 "use client";
 
 // 좌측 사이드바: 전체(ALL) + 폴더 리스트
-// 각 항목은 라우팅 링크이며, 현재 경로(usePathname)로 활성 항목을 표시한다.
+// 폴더 목록/순서·링크는 store에서 읽는다. 폴더 카운트는 링크에서 계산한다.
+// 각 폴더는 라우팅 링크이며, 현재 경로(usePathname)로 활성 항목을 표시한다.
+// 폴더 항목은 드래그 핸들(pointer 이벤트)을 잡아 순서를 바꿀 수 있다.
 // 모든 페이지가 공유하므로 루트 레이아웃에서 렌더링된다.
 
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { folders, links } from "@/app/lib/mock-data";
+import { useFolders, useLinks, reorderFolders } from "./store";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const folders = useFolders();
+  const links = useLinks();
+
+  // 폴더별 링크 개수
+  const countOf = (folderId: string) =>
+    links.filter((link) => link.folderId === folderId).length;
+
+  // 각 폴더 행의 DOM 참조 (드래그 중 위치 판정용)
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // 드래그 상태는 핸들러에서 즉시 읽도록 ref로, 화면 표시는 state로 관리
+  const dragFrom = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  function handlePointerDown(e: React.PointerEvent, index: number) {
+    e.preventDefault();
+    // 포인터를 핸들에 고정해 영역을 벗어나도 move/up 이벤트를 계속 받는다
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // 일부 환경에서 실패할 수 있으나 드래그 로직에는 영향 없음
+    }
+    dragFrom.current = index;
+    dragOver.current = index;
+    setDraggingIndex(index);
+    setOverIndex(index);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (dragFrom.current === null) return;
+    const y = e.clientY;
+    let target = dragFrom.current;
+    // 각 행의 세로 중점을 기준으로 삽입 위치를 정한다
+    for (let i = 0; i < folders.length; i++) {
+      const el = rowRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      target = i;
+      if (y < rect.top + rect.height / 2) break;
+    }
+    dragOver.current = target;
+    setOverIndex(target);
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    const from = dragFrom.current;
+    const to = dragOver.current;
+    if (from !== null && to !== null && from !== to) {
+      reorderFolders(from, to);
+    }
+    dragFrom.current = null;
+    dragOver.current = null;
+    setDraggingIndex(null);
+    setOverIndex(null);
+  }
 
   return (
     <aside className="w-full shrink-0 p-4 sm:w-60">
       <nav className="flex flex-col gap-1">
-        {/* 전체(ALL) */}
-        <SidebarItem
+        {/* 전체(ALL) — 폴더가 아니므로 순서 변경 대상이 아니다 */}
+        <SidebarLink
           href="/"
           label="전체"
           count={links.length}
@@ -27,30 +87,50 @@ export default function Sidebar() {
           폴더
         </p>
 
-        {/* 폴더 리스트 */}
-        {folders.map((folder) => (
-          <SidebarItem
-            key={folder.id}
-            href={`/folder/${folder.id}`}
-            label={folder.name}
-            count={folder.count}
-            active={pathname === `/folder/${folder.id}`}
-          />
-        ))}
+        {/* 폴더 리스트 (핸들 드래그로 순서 변경) */}
+        {folders.map((folder, index) => {
+          const isDragging = draggingIndex === index;
+          const isOver =
+            overIndex === index &&
+            draggingIndex !== null &&
+            draggingIndex !== index;
+          return (
+            <div
+              key={folder.id}
+              ref={(el) => {
+                rowRefs.current[index] = el;
+              }}
+              className={`rounded-xl transition-colors ${
+                isOver ? "bg-[var(--accent-soft)]" : ""
+              } ${isDragging ? "opacity-40" : ""}`}
+            >
+              <FolderRow
+                href={`/folder/${folder.id}`}
+                label={folder.name}
+                count={countOf(folder.id)}
+                active={pathname === `/folder/${folder.id}`}
+                dragging={draggingIndex !== null}
+                onHandlePointerDown={(e) => handlePointerDown(e, index)}
+                onHandlePointerMove={handlePointerMove}
+                onHandlePointerUp={handlePointerUp}
+              />
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );
 }
 
-// 사이드바 항목 (전체 / 폴더 공통) — 라우팅 링크
-interface SidebarItemProps {
+// 전체(ALL) 등 단순 네비게이션 링크
+interface SidebarLinkProps {
   href: string;
   label: string;
   count: number;
   active: boolean;
 }
 
-function SidebarItem({ href, label, count, active }: SidebarItemProps) {
+function SidebarLink({ href, label, count, active }: SidebarLinkProps) {
   return (
     <Link
       href={href}
@@ -68,5 +148,76 @@ function SidebarItem({ href, label, count, active }: SidebarItemProps) {
         {count}
       </span>
     </Link>
+  );
+}
+
+// 드래그 핸들이 달린 폴더 항목
+interface FolderRowProps extends SidebarLinkProps {
+  dragging: boolean;
+  onHandlePointerDown: (e: React.PointerEvent) => void;
+  onHandlePointerMove: (e: React.PointerEvent) => void;
+  onHandlePointerUp: (e: React.PointerEvent) => void;
+}
+
+function FolderRow({
+  href,
+  label,
+  count,
+  active,
+  dragging,
+  onHandlePointerDown,
+  onHandlePointerMove,
+  onHandlePointerUp,
+}: FolderRowProps) {
+  return (
+    <div className="group flex items-center gap-1">
+      {/* 드래그 핸들 — 이 영역을 잡고 끌면 순서가 바뀐다 */}
+      <button
+        type="button"
+        aria-label={`${label} 폴더 순서 변경 핸들`}
+        title="드래그하여 순서 변경"
+        onPointerDown={onHandlePointerDown}
+        onPointerMove={onHandlePointerMove}
+        onPointerUp={onHandlePointerUp}
+        className={`flex shrink-0 touch-none items-center justify-center rounded-md p-1 text-[var(--placeholder)] transition-opacity hover:text-[var(--text-sub)] ${
+          dragging
+            ? "cursor-grabbing opacity-100"
+            : "cursor-grab opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          aria-hidden
+        >
+          <circle cx="6" cy="4" r="1.3" />
+          <circle cx="10" cy="4" r="1.3" />
+          <circle cx="6" cy="8" r="1.3" />
+          <circle cx="10" cy="8" r="1.3" />
+          <circle cx="6" cy="12" r="1.3" />
+          <circle cx="10" cy="12" r="1.3" />
+        </svg>
+      </button>
+
+      <Link
+        href={href}
+        aria-current={active ? "page" : undefined}
+        // 드래그 중에는 링크 클릭(이동)을 막아 정렬과 충돌하지 않게 한다
+        className={`nav-item flex flex-1 items-center justify-between px-3 py-2.5 text-[15px] font-medium ${
+          active ? "nav-item-active" : ""
+        } ${dragging ? "pointer-events-none" : ""}`}
+      >
+        <span className="truncate">{label}</span>
+        <span
+          className={`ml-2 shrink-0 text-xs ${
+            active ? "opacity-80" : "text-[var(--text-sub)]"
+          }`}
+        >
+          {count}
+        </span>
+      </Link>
+    </div>
   );
 }
