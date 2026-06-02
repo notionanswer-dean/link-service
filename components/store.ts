@@ -83,6 +83,18 @@ export function addFolder(name: string): Folder {
   return folder;
 }
 
+/** 폴더 이름을 변경한다. */
+export function renameFolder(folderId: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  setState({
+    ...state,
+    folders: state.folders.map((folder) =>
+      folder.id === folderId ? { ...folder, name: trimmed } : folder
+    ),
+  });
+}
+
 /** 폴더와 그 폴더에 담긴 링크를 모두 삭제한다. */
 export function deleteFolder(folderId: string) {
   setState({

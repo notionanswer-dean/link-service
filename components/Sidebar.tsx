@@ -11,6 +11,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useFolders, useLinks, reorderFolders } from "./store";
 import DeleteFolderModal from "./DeleteFolderModal";
+import EditFolderModal from "./EditFolderModal";
 import type { Folder } from "@/app/lib/mock-data";
 
 export default function Sidebar() {
@@ -21,6 +22,8 @@ export default function Sidebar() {
 
   // 삭제 확인 모달 대상 폴더 (null이면 닫힘)
   const [pendingDelete, setPendingDelete] = useState<Folder | null>(null);
+  // 이름 수정 모달 대상 폴더 (null이면 닫힘)
+  const [pendingEdit, setPendingEdit] = useState<Folder | null>(null);
 
   // 폴더별 링크 개수
   const countOf = (folderId: string) =>
@@ -119,12 +122,21 @@ export default function Sidebar() {
                 onHandlePointerDown={(e) => handlePointerDown(e, index)}
                 onHandlePointerMove={handlePointerMove}
                 onHandlePointerUp={handlePointerUp}
+                onEdit={() => setPendingEdit(folder)}
                 onDelete={() => setPendingDelete(folder)}
               />
             </div>
           );
         })}
       </nav>
+
+      {/* 이름 수정 모달 */}
+      {pendingEdit && (
+        <EditFolderModal
+          folder={pendingEdit}
+          onClose={() => setPendingEdit(null)}
+        />
+      )}
 
       {/* 삭제 확인 모달 */}
       {pendingDelete && (
@@ -179,6 +191,7 @@ interface FolderRowProps extends SidebarLinkProps {
   onHandlePointerDown: (e: React.PointerEvent) => void;
   onHandlePointerMove: (e: React.PointerEvent) => void;
   onHandlePointerUp: (e: React.PointerEvent) => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
@@ -191,6 +204,7 @@ function FolderRow({
   onHandlePointerDown,
   onHandlePointerMove,
   onHandlePointerUp,
+  onEdit,
   onDelete,
 }: FolderRowProps) {
   return (
@@ -242,6 +256,34 @@ function FolderRow({
           {count}
         </span>
       </Link>
+
+      {/* 수정 버튼 — 행에 마우스를 올리면 폴더 이름 우측에 나타난다 */}
+      <button
+        type="button"
+        aria-label={`${label} 폴더 이름 수정`}
+        title="폴더 이름 수정"
+        onClick={onEdit}
+        className={`flex shrink-0 items-center justify-center rounded-md p-1 text-[var(--placeholder)] transition-opacity hover:text-[var(--accent)] ${
+          dragging
+            ? "pointer-events-none opacity-0"
+            : "opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5.4 12.6l-2.7.7.7-2.7 8.1-8.1z" />
+          <path d="M10.3 3.7l2 2" />
+        </svg>
+      </button>
 
       {/* 삭제 버튼 — 행에 마우스를 올리면 폴더 이름 우측에 나타난다 */}
       <button
