@@ -28,13 +28,10 @@ export default function NewLinkForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-6">
       {/* 링크 주소 인풋 */}
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="url"
-          className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-        >
+      <div className="flex flex-col gap-2">
+        <label htmlFor="url" className="text-sm font-bold text-[var(--text)]">
           링크 주소
         </label>
         <input
@@ -43,23 +40,20 @@ export default function NewLinkForm() {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com"
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-300"
+          className="toss-input px-4 py-3.5 text-[17px]"
         />
       </div>
 
       {/* 폴더 선택 셀렉트 */}
-      <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="folder"
-          className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-        >
+      <div className="flex flex-col gap-2">
+        <label htmlFor="folder" className="text-sm font-bold text-[var(--text)]">
           폴더
         </label>
         <select
           id="folder"
           value={folderId}
           onChange={(e) => setFolderId(e.target.value)}
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-colors focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-300"
+          className="toss-input px-4 py-3.5 text-[17px]"
         >
           {folders.map((folder) => (
             <option key={folder.id} value={folder.id}>
@@ -71,16 +65,10 @@ export default function NewLinkForm() {
 
       {/* 저장 / 취소 */}
       <div className="mt-2 flex items-center gap-2">
-        <button
-          type="submit"
-          className="inline-flex items-center rounded-full bg-zinc-900 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
+        <button type="submit" className="btn-primary px-5 py-3.5 text-[17px]">
           저장
         </button>
-        <Link
-          href="/"
-          className="inline-flex items-center rounded-full border border-zinc-300 px-5 py-2 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-        >
+        <Link href="/" className="btn-secondary px-5 py-3.5 text-[17px]">
           취소
         </Link>
       </div>

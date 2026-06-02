@@ -10,10 +10,8 @@ export const metadata: Metadata = {
 
 export default function NewLinkPage() {
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
-      <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-        새 링크
-      </h2>
+    <main className="flex flex-1 flex-col gap-5 px-5 pt-9 pb-6 sm:px-8">
+      <h2 className="text-[20px] font-bold text-[var(--text)]">새 링크</h2>
       <NewLinkForm />
     </main>
   );

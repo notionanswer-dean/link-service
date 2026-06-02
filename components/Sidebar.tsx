@@ -12,7 +12,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-full shrink-0 border-b border-zinc-200 p-4 sm:w-60 sm:border-b-0 sm:border-r dark:border-zinc-800">
+    <aside className="w-full shrink-0 p-4 sm:w-60">
       <nav className="flex flex-col gap-1">
         {/* 전체(ALL) */}
         <SidebarItem
@@ -23,7 +23,7 @@ export default function Sidebar() {
         />
 
         {/* 폴더 라벨 */}
-        <p className="mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+        <p className="mt-5 mb-1.5 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-sub)]">
           폴더
         </p>
 
@@ -55,16 +55,14 @@ function SidebarItem({ href, label, count, active }: SidebarItemProps) {
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-        active
-          ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-          : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+      className={`nav-item flex items-center justify-between px-3 py-2.5 text-[15px] font-medium ${
+        active ? "nav-item-active" : ""
       }`}
     >
       <span className="truncate">{label}</span>
       <span
         className={`ml-2 shrink-0 text-xs ${
-          active ? "opacity-80" : "text-zinc-400"
+          active ? "opacity-80" : "text-[var(--text-sub)]"
         }`}
       >
         {count}

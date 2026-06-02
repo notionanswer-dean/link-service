@@ -15,10 +15,8 @@ export default function LinkGrid({ links }: LinkGridProps) {
         <p className="text-4xl" aria-hidden>
           🔖
         </p>
-        <p className="font-medium text-zinc-600 dark:text-zinc-300">
-          저장된 링크가 없습니다
-        </p>
-        <p className="text-sm text-zinc-400">
+        <p className="font-bold text-[var(--text)]">저장된 링크가 없습니다</p>
+        <p className="text-sm text-[var(--text-sub)]">
           상단의 &quot;새 링크&quot; 버튼으로 북마크를 추가해 보세요.
         </p>
       </div>

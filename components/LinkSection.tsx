@@ -11,12 +11,10 @@ interface LinkSectionProps {
 
 export default function LinkSection({ title, links }: LinkSectionProps) {
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+    <main className="flex flex-1 flex-col gap-5 px-5 pt-9 pb-6 sm:px-8">
       <div className="flex items-baseline gap-2">
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-          {title}
-        </h2>
-        <span className="text-sm text-zinc-400">{links.length}개</span>
+        <h2 className="text-[20px] font-bold text-[var(--text)]">{title}</h2>
+        <span className="text-sm text-[var(--text-sub)]">{links.length}개</span>
       </div>
 
       <LinkGrid links={links} />

@@ -1,26 +1,101 @@
 @import "tailwindcss";
 
+/* 토스 스타일 디자인 토큰 (라이트모드 전용) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f4f4f4;
+  --card: #ffffff;
+  --text: #191f28;
+  --text-sub: #8b95a1;
+  --placeholder: #b0b8c1;
+  --accent: #3182f6;
+  --accent-hover: #1b64da;
+  --accent-soft: #e8f3ff;
+  --accent-soft-hover: #d8eaff;
+  --disabled: #dcdee3;
+  --error: #f04452;
+  --success: #30b06e;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 카드: 보더 없이 부드러운 그림자, 호버 시 그림자 강화 + 살짝 떠오름 */
+.toss-card {
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.toss-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* 기본 버튼: 액센트 배경, 클릭 시 눌리는 모션 */
+.btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* 보조 버튼: 연한 액센트 배경 */
+.btn-secondary {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 12px;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.btn-secondary:hover {
+  background: var(--accent-soft-hover);
+}
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* 네비게이션 항목 */
+.nav-item {
+  border-radius: 12px;
+  color: var(--text);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.nav-item:hover {
+  background: var(--accent-soft);
+}
+.nav-item-active {
+  background: var(--accent);
+  color: #ffffff;
+}
+.nav-item-active:hover {
+  background: var(--accent);
+}
+
+/* 입력 필드 / 셀렉트: 보더 없이 회색 배경, 포커스 시 흰 배경 + 액센트 링 */
+.toss-input {
+  background: var(--background);
+  border: none;
+  border-radius: 12px;
+  color: var(--text);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.toss-input::placeholder {
+  color: var(--placeholder);
+}
+.toss-input:focus {
+  outline: none;
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--accent);
 }

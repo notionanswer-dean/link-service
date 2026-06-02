@@ -20,24 +20,24 @@ export default function LinkCard({ link }: LinkCardProps) {
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+      className="toss-card group flex flex-col gap-3 p-5"
     >
       {/* 썸네일 자리: 도메인 첫 글자를 보여주는 플레이스홀더 */}
-      <div className="flex h-28 items-center justify-center rounded-lg bg-zinc-100 text-3xl font-bold text-zinc-400 dark:bg-zinc-900">
+      <div className="flex h-28 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-3xl font-bold text-[var(--accent)]">
         {host.charAt(0).toUpperCase()}
       </div>
 
       <div className="flex flex-col gap-1">
-        <h3 className="line-clamp-1 font-semibold text-zinc-900 group-hover:underline dark:text-zinc-50">
+        <h3 className="line-clamp-1 font-bold text-[var(--text)]">
           {link.title}
         </h3>
-        <p className="line-clamp-2 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="line-clamp-2 text-sm leading-relaxed text-[var(--text-sub)]">
           {link.description}
         </p>
       </div>
 
       {/* 푸터: 도메인 + 저장일 */}
-      <div className="mt-auto flex items-center justify-between text-xs text-zinc-400">
+      <div className="mt-auto flex items-center justify-between text-xs text-[var(--text-sub)]">
         <span className="truncate">{host}</span>
         <span className="shrink-0">{link.savedAt}</span>
       </div>

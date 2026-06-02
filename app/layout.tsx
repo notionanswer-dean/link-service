@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-white dark:bg-black">
+      <body className="min-h-full flex flex-col">
         <Header />
         {/* 헤더 아래로 사이드바 + 페이지 본문을 나란히 배치 (모든 페이지 공유) */}
         <div className="flex flex-1 flex-col sm:flex-row">
