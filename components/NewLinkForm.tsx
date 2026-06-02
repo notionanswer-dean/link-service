@@ -13,17 +13,41 @@ export default function NewLinkForm() {
   const folders = useFolders();
   const [url, setUrl] = useState("");
   const [folderId, setFolderId] = useState(folders[0]?.id ?? "");
+  // 오픈 그래프 정보를 수집하는 동안 버튼을 잠근다
+  const [saving, setSaving] = useState(false);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!url.trim()) {
+    const trimmed = url.trim();
+    if (!trimmed) {
       alert("링크 주소를 입력해 주세요.");
       return;
     }
+    if (saving) return;
 
-    // 스토어에 실제로 추가한 뒤 해당 폴더로 이동해 결과를 보여준다
-    addLink({ url: url.trim(), folderId });
+    setSaving(true);
+    // 오픈 그래프 API로 제목·설명·썸네일을 수집한다.
+    // 실패하더라도 입력한 URL만으로 저장은 진행한다(스토어에서 호스트명으로 폴백).
+    let og: { title?: string; description?: string; image?: string; url?: string } =
+      {};
+    try {
+      const res = await fetch(`/api/og?url=${encodeURIComponent(trimmed)}`);
+      if (res.ok) {
+        og = await res.json();
+      }
+    } catch {
+      // 네트워크 오류는 무시하고 기본 정보로 저장한다
+    }
+
+    addLink({
+      url: og.url || trimmed,
+      folderId,
+      title: og.title,
+      description: og.description,
+      thumbnail: og.image,
+    });
+    // 해당 폴더로 이동해 결과를 보여준다
     router.push(folderId ? `/folder/${folderId}` : "/");
   }
 
@@ -65,8 +89,12 @@ export default function NewLinkForm() {
 
       {/* 저장 / 취소 */}
       <div className="mt-2 flex items-center gap-2">
-        <button type="submit" className="btn-primary px-5 py-3.5 text-[17px]">
-          저장
+        <button
+          type="submit"
+          disabled={saving}
+          className="btn-primary px-5 py-3.5 text-[17px] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--text-sub)]"
+        >
+          {saving ? "정보 수집 중…" : "저장"}
         </button>
         <Link href="/" className="btn-secondary px-5 py-3.5 text-[17px]">
           취소

@@ -14,6 +14,8 @@ export interface LinkItem {
   title: string;
   url: string;
   description: string;
+  /** 오픈 그래프 썸네일 이미지 URL (없을 수 있음) */
+  thumbnail?: string;
   /** 소속 폴더 id */
   folderId: string;
   /** 저장 일자 (YYYY.MM.DD) */

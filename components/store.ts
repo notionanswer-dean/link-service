@@ -128,6 +128,7 @@ export function addLink(input: {
   folderId: string;
   title?: string;
   description?: string;
+  thumbnail?: string;
 }): LinkItem {
   // URL에서 호스트명을 뽑아 제목 기본값으로 사용
   let host = input.url;
@@ -148,6 +149,7 @@ export function addLink(input: {
     title: input.title?.trim() || host,
     url: input.url,
     description: input.description?.trim() || "",
+    thumbnail: input.thumbnail?.trim() || undefined,
     folderId: input.folderId,
     savedAt,
   };

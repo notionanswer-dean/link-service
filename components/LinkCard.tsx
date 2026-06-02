@@ -22,10 +22,21 @@ export default function LinkCard({ link }: LinkCardProps) {
       rel="noopener noreferrer"
       className="toss-card group flex flex-col gap-3 p-5"
     >
-      {/* 썸네일 자리: 도메인 첫 글자를 보여주는 플레이스홀더 */}
-      <div className="flex h-28 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-3xl font-bold text-[var(--accent)]">
-        {host.charAt(0).toUpperCase()}
-      </div>
+      {/* 썸네일: 오픈 그래프 이미지가 있으면 표시, 없으면 도메인 첫 글자 플레이스홀더 */}
+      {link.thumbnail ? (
+        // 외부 도메인 이미지라 최적화 없이 일반 img로 표시한다
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={link.thumbnail}
+          alt={`${link.title} 썸네일`}
+          loading="lazy"
+          className="h-28 w-full rounded-xl bg-[var(--accent-soft)] object-cover"
+        />
+      ) : (
+        <div className="flex h-28 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-3xl font-bold text-[var(--accent)]">
+          {host.charAt(0).toUpperCase()}
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <h3 className="line-clamp-1 font-bold text-[var(--text)]">
