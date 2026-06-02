@@ -157,6 +157,28 @@ export function addLink(input: {
   return link;
 }
 
+/** 링크의 폴더·제목·설명을 수정한다. */
+export function updateLink(
+  linkId: string,
+  input: { folderId: string; title: string; description: string }
+) {
+  const title = input.title.trim();
+  if (!title) return;
+  setState({
+    ...state,
+    links: state.links.map((link) =>
+      link.id === linkId
+        ? {
+            ...link,
+            folderId: input.folderId,
+            title,
+            description: input.description.trim(),
+          }
+        : link
+    ),
+  });
+}
+
 /** 링크를 삭제한다. */
 export function deleteLink(linkId: string) {
   setState({

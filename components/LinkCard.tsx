@@ -7,6 +7,7 @@
 import { useState } from "react";
 import type { LinkItem } from "@/app/lib/mock-data";
 import DeleteLinkModal from "./DeleteLinkModal";
+import EditLinkModal from "./EditLinkModal";
 
 interface LinkCardProps {
   link: LinkItem;
@@ -15,6 +16,8 @@ interface LinkCardProps {
 export default function LinkCard({ link }: LinkCardProps) {
   // 삭제 확인 모달 표시 여부
   const [confirming, setConfirming] = useState(false);
+  // 수정 모달 표시 여부
+  const [editing, setEditing] = useState(false);
 
   // 도메인만 추출해 부가 정보로 표시 (예: nextjs.org)
   let host = link.url;
@@ -22,6 +25,13 @@ export default function LinkCard({ link }: LinkCardProps) {
     host = new URL(link.url).hostname.replace(/^www\./, "");
   } catch {
     // 잘못된 URL은 원본을 그대로 사용
+  }
+
+  // 수정 버튼 클릭: 카드(링크) 이동을 막고 모달만 연다
+  function handleEditClick(event: React.MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    setEditing(true);
   }
 
   // 삭제 버튼 클릭: 카드(링크) 이동을 막고 모달만 연다
@@ -39,32 +49,56 @@ export default function LinkCard({ link }: LinkCardProps) {
         rel="noopener noreferrer"
         className="toss-card group relative flex flex-col gap-3 p-5"
       >
-      {/* 삭제 버튼 — 카드에 마우스를 올리면 우측 상단에 나타난다 */}
-      <button
-        type="button"
-        aria-label={`${link.title} 링크 삭제`}
-        title="링크 삭제"
-        onClick={handleDeleteClick}
-        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--card)]/90 text-[var(--text-sub)] opacity-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)] backdrop-blur transition-opacity hover:text-[var(--error)] group-hover:opacity-100"
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
+      {/* 수정·삭제 버튼 — 카드에 마우스를 올리면 우측 상단에 나타난다 */}
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          type="button"
+          aria-label={`${link.title} 링크 수정`}
+          title="링크 수정"
+          onClick={handleEditClick}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--card)]/90 text-[var(--text-sub)] shadow-[0_2px_8px_rgba(0,0,0,0.12)] backdrop-blur transition-colors hover:text-[var(--accent)]"
         >
-          <path d="M2.5 4h11" />
-          <path d="M6 4V2.8a.8.8 0 0 1 .8-.8h2.4a.8.8 0 0 1 .8.8V4" />
-          <path d="M12.5 4l-.6 8.3a1.2 1.2 0 0 1-1.2 1.1H5.3a1.2 1.2 0 0 1-1.2-1.1L3.5 4" />
-          <path d="M6.5 7v3.8" />
-          <path d="M9.5 7v3.8" />
-        </svg>
-      </button>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M11.5 2.5a1.4 1.4 0 0 1 2 2L5.4 12.6l-2.7.7.7-2.7 8.1-8.1z" />
+            <path d="M10.3 3.7l2 2" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          aria-label={`${link.title} 링크 삭제`}
+          title="링크 삭제"
+          onClick={handleDeleteClick}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--card)]/90 text-[var(--text-sub)] shadow-[0_2px_8px_rgba(0,0,0,0.12)] backdrop-blur transition-colors hover:text-[var(--error)]"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M2.5 4h11" />
+            <path d="M6 4V2.8a.8.8 0 0 1 .8-.8h2.4a.8.8 0 0 1 .8.8V4" />
+            <path d="M12.5 4l-.6 8.3a1.2 1.2 0 0 1-1.2 1.1H5.3a1.2 1.2 0 0 1-1.2-1.1L3.5 4" />
+            <path d="M6.5 7v3.8" />
+            <path d="M9.5 7v3.8" />
+          </svg>
+        </button>
+      </div>
 
       {/* 썸네일: 오픈 그래프 이미지가 있으면 표시, 없으면 도메인 첫 글자 플레이스홀더 */}
       {link.thumbnail ? (
@@ -99,7 +133,10 @@ export default function LinkCard({ link }: LinkCardProps) {
 
       </a>
 
-      {/* 삭제 확인 모달 — 카드 링크 밖에 두어 클릭이 링크로 전파되지 않게 한다 */}
+      {/* 모달 — 카드 링크 밖에 두어 클릭이 링크로 전파되지 않게 한다 */}
+      {editing && (
+        <EditLinkModal link={link} onClose={() => setEditing(false)} />
+      )}
       {confirming && (
         <DeleteLinkModal link={link} onClose={() => setConfirming(false)} />
       )}
