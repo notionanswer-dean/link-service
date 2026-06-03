@@ -170,6 +170,14 @@ export default function Sidebar() {
         {loggingOut ? "로그아웃 중…" : "로그아웃"}
       </button>
 
+      {/* 개인정보 처리방침 — 로그아웃 버튼 아래 회색 링크 */}
+      <Link
+        href="/privacy"
+        className="px-3 py-2 text-xs text-[var(--text-sub)] hover:underline"
+      >
+        개인정보 처리방침
+      </Link>
+
       {/* 이름 수정 모달 */}
       {pendingEdit && (
         <EditFolderModal

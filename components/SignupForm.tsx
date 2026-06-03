@@ -169,6 +169,16 @@ export default function SignupForm() {
           로그인
         </Link>
       </p>
+
+      {/* 개인정보 처리방침 링크 */}
+      <p className="mt-3 text-center">
+        <Link
+          href="/privacy"
+          className="text-xs text-[var(--text-sub)] hover:underline"
+        >
+          개인정보 처리방침
+        </Link>
+      </p>
     </>
   );
 }
