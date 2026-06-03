@@ -12,6 +12,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useFolders, useLinks, reorderFolders } from "./store";
 import DeleteFolderModal from "./DeleteFolderModal";
 import EditFolderModal from "./EditFolderModal";
+import { createClient } from "@/utils/supabase/client";
 import type { Folder } from "@/app/lib/mock-data";
 
 export default function Sidebar() {
@@ -25,9 +26,23 @@ export default function Sidebar() {
   // 이름 수정 모달 대상 폴더 (null이면 닫힘)
   const [pendingEdit, setPendingEdit] = useState<Folder | null>(null);
 
+  // 로그아웃 진행 중 플래그 — 버튼 중복 클릭 방지
+  const [loggingOut, setLoggingOut] = useState(false);
+
   // 폴더별 링크 개수
   const countOf = (folderId: string) =>
     links.filter((link) => link.folderId === folderId).length;
+
+  // 로그아웃: 세션을 종료하고 로그인 페이지로 이동한다.
+  async function handleLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    // 서버 컴포넌트(접근 제한 레이아웃)가 갱신된 세션을 다시 평가하도록 한다.
+    router.replace("/login");
+    router.refresh();
+  }
 
   // 각 폴더 행의 DOM 참조 (드래그 중 위치 판정용)
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -81,7 +96,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-full shrink-0 p-4 sm:w-60">
+    <aside className="flex w-full shrink-0 flex-col p-4 sm:w-60">
       <nav className="flex flex-col gap-1">
         {/* 전체(ALL) — 폴더가 아니므로 순서 변경 대상이 아니다 */}
         <SidebarLink
@@ -129,6 +144,31 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* 로그아웃 버튼 — 사이드바 최하단에 고정 */}
+      <button
+        type="button"
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="nav-item mt-auto flex items-center gap-2 px-3 py-2.5 text-[15px] font-medium text-[var(--text-sub)] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M6 14H3.5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1H6" />
+          <path d="M10.5 11l3-3-3-3" />
+          <path d="M13.5 8H6" />
+        </svg>
+        {loggingOut ? "로그아웃 중…" : "로그아웃"}
+      </button>
 
       {/* 이름 수정 모달 */}
       {pendingEdit && (
