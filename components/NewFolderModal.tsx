@@ -12,6 +12,8 @@ interface NewFolderModalProps {
 
 export default function NewFolderModal({ onClose }: NewFolderModalProps) {
   const [name, setName] = useState("");
+  // 저장 중 플래그 — 버튼 중복 클릭으로 폴더가 여러 번 추가되는 것을 막는다.
+  const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 모달이 열리면 인풋에 포커스하고, ESC로 닫는다.
@@ -27,15 +29,23 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // 이미 저장 중이면(중복 클릭) 무시한다.
+    if (submitting) return;
     const trimmed = name.trim();
     if (!trimmed) {
       inputRef.current?.focus();
       return;
     }
-    addFolder(trimmed);
-    onClose();
+    setSubmitting(true);
+    const created = await addFolder(trimmed);
+    if (created) {
+      onClose();
+    } else {
+      // 저장 실패 시 모달을 유지하고 다시 시도할 수 있게 한다.
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -84,16 +94,17 @@ export default function NewFolderModal({ onClose }: NewFolderModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary px-5 py-3 text-[15px]"
+              disabled={submitting}
+              className="btn-secondary px-5 py-3 text-[15px] disabled:cursor-not-allowed"
             >
               취소
             </button>
             <button
               type="submit"
-              disabled={!name.trim()}
+              disabled={!name.trim() || submitting}
               className="btn-primary px-5 py-3 text-[15px] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--text-sub)]"
             >
-              저장
+              {submitting ? "저장 중…" : "저장"}
             </button>
           </div>
         </form>
