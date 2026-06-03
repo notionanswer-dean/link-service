@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -66,7 +67,19 @@ export default function RootLayout({
     >
       {/* 헤더/사이드바 셸은 (main) 그룹 레이아웃에서만 렌더링한다.
           (auth) 그룹(로그인·회원가입)은 셸 없이 본문만 표시된다. */}
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+
+        {/* Microsoft Clarity 추적 스크립트 — 모든 페이지에 적용된다.
+            이 로더 스니펫이 실행되며 clarity.ms 태그를 <head>에 삽입한다. */}
+        <Script id="ms-clarity" strategy="afterInteractive">
+          {`(function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "x154vdswis");`}
+        </Script>
+      </body>
     </html>
   );
 }
