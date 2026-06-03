@@ -229,26 +229,36 @@ export async function addLink(input: {
   return link;
 }
 
-/** 링크의 폴더·제목·설명을 수정한다. */
-export function updateLink(
+/**
+ * 링크의 폴더·제목·설명을 Supabase links 테이블에서 수정하고 로컬 목록에 반영한다.
+ * (URL·썸네일은 수정 대상이 아니다.)
+ * 성공하면 true, 실패하면 false를 반환한다.
+ */
+export async function updateLink(
   linkId: string,
   input: { folderId: string; title: string; description: string }
-) {
+): Promise<boolean> {
   const title = input.title.trim();
-  if (!title) return;
+  if (!title) return false;
+  const description = input.description.trim();
+  const { error } = await supabase
+    .from("links")
+    .update({
+      folder_id: input.folderId ? Number(input.folderId) : null,
+      title,
+      description: description || null,
+    })
+    .eq("id", Number(linkId));
+  if (error) return false;
   setState({
     ...state,
     links: state.links.map((link) =>
       link.id === linkId
-        ? {
-            ...link,
-            folderId: input.folderId,
-            title,
-            description: input.description.trim(),
-          }
+        ? { ...link, folderId: input.folderId, title, description }
         : link
     ),
   });
+  return true;
 }
 
 /** 링크를 삭제한다. */

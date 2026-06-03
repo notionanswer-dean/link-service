@@ -34,15 +34,24 @@ export default function EditLinkModal({ link, onClose }: EditLinkModalProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) {
       titleRef.current?.focus();
       return;
     }
-    updateLink(link.id, { folderId, title: trimmed, description });
-    onClose();
+    const ok = await updateLink(link.id, {
+      folderId,
+      title: trimmed,
+      description,
+    });
+    if (ok) {
+      onClose();
+    } else {
+      // 저장 실패 시 모달을 유지해 다시 시도할 수 있게 한다.
+      titleRef.current?.focus();
+    }
   }
 
   return (
