@@ -38,10 +38,13 @@ export default function DeleteFolderModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleDelete() {
-    deleteFolder(folder.id);
-    onDeleted(folder.id);
-    onClose();
+  async function handleDelete() {
+    const ok = await deleteFolder(folder.id);
+    if (ok) {
+      onDeleted(folder.id);
+      onClose();
+    }
+    // 삭제 실패 시 모달을 유지해 다시 시도할 수 있게 한다.
   }
 
   return (

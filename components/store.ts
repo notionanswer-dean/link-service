@@ -146,13 +146,23 @@ export async function renameFolder(
   return true;
 }
 
-/** 폴더와 그 폴더에 담긴 링크를 모두 삭제한다. */
-export function deleteFolder(folderId: string) {
+/**
+ * 폴더를 Supabase folders 테이블에서 삭제하고 로컬 목록에 반영한다.
+ * (로컬 상태에선 폴더에 담긴 링크도 함께 비운다.)
+ * 성공하면 true, 실패하면 false를 반환한다.
+ */
+export async function deleteFolder(folderId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("folders")
+    .delete()
+    .eq("id", Number(folderId));
+  if (error) return false;
   setState({
     ...state,
     folders: state.folders.filter((folder) => folder.id !== folderId),
     links: state.links.filter((link) => link.folderId !== folderId),
   });
+  return true;
 }
 
 /** fromIndex 폴더를 toIndex 위치로 이동한다. */
