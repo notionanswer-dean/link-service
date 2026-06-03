@@ -2,17 +2,14 @@
 
 // 북마크 스토어(폴더 + 링크)의 단일 소스.
 // 헤더(새 폴더 모달)·사이드바·새 링크 폼·폴더/전체 뷰가 이 상태를 공유한다.
-// 폴더는 Supabase `folders` 테이블이 소스이고, 링크는 아직 mock + localStorage다.
+// 폴더와 링크 모두 Supabase(`folders`/`links` 테이블)가 소스다.
 // useSyncExternalStore를 사용해 effect 없이 SSR-안전하게 구독한다.
 
 import { useSyncExternalStore } from "react";
 import type { Folder, LinkItem } from "@/app/lib/mock-data";
-import { links as initialLinks } from "@/app/lib/mock-data";
 import { createClient } from "@/utils/supabase/client";
 
-const STORAGE_KEY = "hanip-store-v1";
-
-// 폴더 데이터를 읽고 쓰는 Supabase 브라우저 클라이언트.
+// 폴더·링크 데이터를 읽고 쓰는 Supabase 브라우저 클라이언트.
 const supabase = createClient();
 
 interface StoreState {
@@ -20,32 +17,24 @@ interface StoreState {
   links: LinkItem[];
 }
 
-// SSR/초기 스냅샷용 빈 폴더 배열 — 참조가 안정적이어야 무한 렌더를 피한다.
+// SSR/초기 스냅샷용 빈 배열 — 참조가 안정적이어야 무한 렌더를 피한다.
 const EMPTY_FOLDERS: Folder[] = [];
+const EMPTY_LINKS: LinkItem[] = [];
 
 // 모듈 레벨 스토어 — 클라이언트 세션 동안 유지된다.
-// 폴더는 클라이언트에서 Supabase로부터 한 번 로드해 채운다.
-let state: StoreState = { folders: EMPTY_FOLDERS, links: initialLinks };
-let loaded = false;
+// 폴더·링크는 클라이언트에서 Supabase로부터 한 번 로드해 채운다.
+let state: StoreState = { folders: EMPTY_FOLDERS, links: EMPTY_LINKS };
 let foldersLoaded = false;
+let linksLoaded = false;
 const listeners = new Set<() => void>();
 
-// 첫 구독 시(클라이언트) localStorage에서 링크를 한 번 복원한다.
-// 폴더는 Supabase가 소스이므로 localStorage에서 복원하지 않는다.
-function ensureLoaded() {
-  if (loaded) return;
-  loaded = true;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<StoreState>;
-      if (Array.isArray(parsed.links)) {
-        state = { ...state, links: parsed.links };
-      }
-    }
-  } catch {
-    // 파싱/접근 실패 시 초기값 유지
-  }
+// timestamptz(ISO) → 저장 일자 표시 형식(YYYY.MM.DD)으로 변환한다.
+function formatSavedAt(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}.${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // 첫 구독 시(클라이언트) Supabase에서 폴더를 한 번 로드한다.
@@ -70,16 +59,30 @@ async function loadFolders() {
   emit();
 }
 
-function persist() {
-  try {
-    // 폴더는 Supabase가 소스이므로 localStorage에는 링크만 보존한다.
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ links: state.links })
-    );
-  } catch {
-    // 저장 실패는 무시 (시크릿 모드 등)
+// 첫 구독 시(클라이언트) Supabase에서 링크를 한 번 로드한다.
+// 최근에 추가한 링크가 위로 오도록 created_at 내림차순으로 가져온다.
+async function loadLinks() {
+  if (linksLoaded) return;
+  linksLoaded = true;
+  const { data, error } = await supabase
+    .from("links")
+    .select("id, url, title, description, thumbnail_url, folder_id, created_at")
+    .order("created_at", { ascending: false });
+  if (error) {
+    linksLoaded = false; // 실패 시 다음 구독에서 재시도 허용
+    return;
   }
+  const links: LinkItem[] = (data ?? []).map((row) => ({
+    id: String(row.id),
+    title: row.title ?? "",
+    url: row.url,
+    description: row.description ?? "",
+    thumbnail: row.thumbnail_url ?? undefined,
+    folderId: row.folder_id != null ? String(row.folder_id) : "",
+    savedAt: formatSavedAt(row.created_at),
+  }));
+  state = { ...state, links };
+  emit();
 }
 
 function emit() {
@@ -88,15 +91,13 @@ function emit() {
 
 function setState(next: StoreState) {
   state = next;
-  persist();
   emit();
 }
 
 function subscribe(listener: () => void) {
-  ensureLoaded();
-  // 폴더를 Supabase에서 로드한다(완료되면 emit으로 반영).
+  // 폴더·링크를 Supabase에서 로드한다(완료되면 emit으로 반영).
   loadFolders();
-  // 첫 구독에서 localStorage 값을 불러왔다면 즉시 반영
+  loadLinks();
   listener();
   listeners.add(listener);
   return () => listeners.delete(listener);
@@ -183,14 +184,17 @@ export function reorderFolders(fromIndex: number, toIndex: number) {
   setState({ ...state, folders: next });
 }
 
-/** 새 링크를 목록 맨 앞에 추가하고 생성된 링크를 반환한다. */
-export function addLink(input: {
+/**
+ * 새 링크를 Supabase links 테이블에 추가하고 목록 맨 앞에 반영한다.
+ * 생성에 성공하면 링크를, 실패하면 null을 반환한다.
+ */
+export async function addLink(input: {
   url: string;
   folderId: string;
   title?: string;
   description?: string;
   thumbnail?: string;
-}): LinkItem {
+}): Promise<LinkItem | null> {
   // URL에서 호스트명을 뽑아 제목 기본값으로 사용
   let host = input.url;
   try {
@@ -199,20 +203,27 @@ export function addLink(input: {
     // 잘못된 URL은 원본 사용
   }
 
-  const now = new Date();
-  const savedAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}.${String(now.getDate()).padStart(2, "0")}`;
+  const { data, error } = await supabase
+    .from("links")
+    .insert({
+      url: input.url,
+      title: input.title?.trim() || host,
+      description: input.description?.trim() || null,
+      thumbnail_url: input.thumbnail?.trim() || null,
+      folder_id: input.folderId ? Number(input.folderId) : null,
+    })
+    .select("id, url, title, description, thumbnail_url, folder_id, created_at")
+    .single();
+  if (error || !data) return null;
 
   const link: LinkItem = {
-    id: `l-${crypto.randomUUID()}`,
-    title: input.title?.trim() || host,
-    url: input.url,
-    description: input.description?.trim() || "",
-    thumbnail: input.thumbnail?.trim() || undefined,
-    folderId: input.folderId,
-    savedAt,
+    id: String(data.id),
+    title: data.title ?? "",
+    url: data.url,
+    description: data.description ?? "",
+    thumbnail: data.thumbnail_url ?? undefined,
+    folderId: data.folder_id != null ? String(data.folder_id) : "",
+    savedAt: formatSavedAt(data.created_at),
   };
   setState({ ...state, links: [link, ...state.links] });
   return link;
@@ -264,6 +275,6 @@ export function useLinks(): LinkItem[] {
   return useSyncExternalStore(
     subscribe,
     () => state.links,
-    () => initialLinks
+    () => EMPTY_LINKS
   );
 }

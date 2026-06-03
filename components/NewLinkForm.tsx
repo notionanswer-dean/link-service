@@ -12,9 +12,14 @@ export default function NewLinkForm() {
   const router = useRouter();
   const folders = useFolders();
   const [url, setUrl] = useState("");
-  const [folderId, setFolderId] = useState(folders[0]?.id ?? "");
+  // 사용자가 명시적으로 고른 폴더 id(아직 안 골랐으면 빈 문자열)
+  const [folderId, setFolderId] = useState("");
   // 오픈 그래프 정보를 수집하는 동안 버튼을 잠근다
   const [saving, setSaving] = useState(false);
+
+  // 폴더는 Supabase에서 비동기로 로드된다. 아직 선택값이 없으면 첫 폴더를
+  // 기본 선택으로 파생해 셀렉트가 항상 유효한 값을 가리키게 한다.
+  const selectedFolderId = folderId || folders[0]?.id || "";
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,15 +45,22 @@ export default function NewLinkForm() {
       // 네트워크 오류는 무시하고 기본 정보로 저장한다
     }
 
-    addLink({
+    const created = await addLink({
       url: og.url || trimmed,
-      folderId,
+      folderId: selectedFolderId,
       title: og.title,
       description: og.description,
       thumbnail: og.image,
     });
+
+    if (!created) {
+      // 저장 실패 시 폼을 유지해 다시 시도할 수 있게 한다.
+      setSaving(false);
+      alert("링크 저장에 실패했습니다. 다시 시도해 주세요.");
+      return;
+    }
     // 해당 폴더로 이동해 결과를 보여준다
-    router.push(folderId ? `/folder/${folderId}` : "/");
+    router.push(selectedFolderId ? `/folder/${selectedFolderId}` : "/");
   }
 
   return (
@@ -75,7 +87,7 @@ export default function NewLinkForm() {
         </label>
         <select
           id="folder"
-          value={folderId}
+          value={selectedFolderId}
           onChange={(e) => setFolderId(e.target.value)}
           className="toss-input px-4 py-3.5 text-[17px]"
         >
