@@ -33,15 +33,20 @@ export default function EditFolderModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
       inputRef.current?.focus();
       return;
     }
-    renameFolder(folder.id, trimmed);
-    onClose();
+    const ok = await renameFolder(folder.id, trimmed);
+    if (ok) {
+      onClose();
+    } else {
+      // 저장 실패 시 모달을 유지해 다시 시도할 수 있게 한다.
+      inputRef.current?.focus();
+    }
   }
 
   return (

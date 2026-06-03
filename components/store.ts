@@ -122,16 +122,28 @@ export async function addFolder(name: string): Promise<Folder | null> {
   return folder;
 }
 
-/** 폴더 이름을 변경한다. */
-export function renameFolder(folderId: string, name: string) {
+/**
+ * 폴더 이름을 Supabase folders 테이블에서 변경하고 로컬 목록에 반영한다.
+ * 성공하면 true, 실패하면 false를 반환한다.
+ */
+export async function renameFolder(
+  folderId: string,
+  name: string
+): Promise<boolean> {
   const trimmed = name.trim();
-  if (!trimmed) return;
+  if (!trimmed) return false;
+  const { error } = await supabase
+    .from("folders")
+    .update({ name: trimmed })
+    .eq("id", Number(folderId));
+  if (error) return false;
   setState({
     ...state,
     folders: state.folders.map((folder) =>
       folder.id === folderId ? { ...folder, name: trimmed } : folder
     ),
   });
+  return true;
 }
 
 /** 폴더와 그 폴더에 담긴 링크를 모두 삭제한다. */
