@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import Toast from "@/components/Toast";
 
@@ -69,6 +70,22 @@ export default function LoginForm() {
     router.push("/");
   }
 
+  // 카카오 소셜 로그인: 카카오 인증 페이지로 이동한 뒤 /auth/callback으로 돌아온다.
+  async function handleKakaoLogin() {
+    if (submitting) return;
+    setSubmitting(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    // 성공 시 브라우저가 카카오로 리다이렉트되므로 이후 처리는 불필요하다.
+    if (error) {
+      showToast("카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      setSubmitting(false);
+    }
+  }
+
   return (
     <>
       {/* 화면 상단 오류 토스트 */}
@@ -122,6 +139,24 @@ export default function LoginForm() {
           className="btn-primary mt-2 w-full px-5 py-3.5 text-[17px] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--text-sub)]"
         >
           {submitting ? "로그인 중…" : "로그인"}
+        </button>
+
+        {/* 카카오 소셜 로그인 — 카카오 공식 버튼 이미지 사용 */}
+        <button
+          type="button"
+          onClick={handleKakaoLogin}
+          disabled={submitting}
+          aria-label="카카오로 로그인"
+          className="w-full overflow-hidden rounded-md transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Image
+            src="/kakao_login_large_wide.png"
+            alt="카카오 로그인"
+            width={600}
+            height={90}
+            className="h-auto w-full"
+            priority
+          />
         </button>
       </form>
 
