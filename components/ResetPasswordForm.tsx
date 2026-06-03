@@ -1,31 +1,35 @@
 "use client";
 
-// 로그인 폼(클라이언트): 이메일·비밀번호 입력 + Supabase Auth 로그인.
+// 비밀번호 재설정 폼(클라이언트): 새 비밀번호 입력 + Supabase Auth 비밀번호 변경.
+// 재설정 링크가 /auth/callback에서 세션을 교환한 뒤 이 폼에 도착하므로, updateUser로 변경한다.
 // - 두 인풋을 모두 채워야 버튼이 활성화된다.
-// - 실패하면 한국어 오류를 화면 상단 토스트로 띄우고, 성공하면 인덱스(/)로 이동한다.
+// - 제출 시 비밀번호 일치 여부를 확인한다.
+// - 실패하면 한국어 오류를 상단 토스트로 띄우고, 성공하면 인덱스(/)로 이동한다.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import Toast from "@/components/Toast";
 
 // Supabase Auth 오류를 사용자에게 보여줄 한국어 메시지로 변환한다.
 function toKoreanError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) {
-    return "이메일 또는 비밀번호가 올바르지 않습니다.";
+  if (m.includes("should be at least")) {
+    return "비밀번호는 6자 이상이어야 합니다.";
   }
-  if (m.includes("email not confirmed")) {
-    return "이메일 인증이 완료되지 않았습니다. 메일함을 확인해 주세요.";
+  if (m.includes("different from the old password")) {
+    return "기존 비밀번호와 다른 비밀번호를 입력해 주세요.";
   }
-  return "로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+  if (m.includes("auth session missing") || m.includes("session")) {
+    return "재설정 링크가 만료되었거나 유효하지 않습니다. 다시 시도해 주세요.";
+  }
+  return "비밀번호 재설정에 실패했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
-export default function LoginForm() {
+export default function ResetPasswordForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
   // 상단 토스트에 띄울 오류 메시지(빈 문자열이면 숨김)
   const [toast, setToast] = useState("");
@@ -46,18 +50,21 @@ export default function LoginForm() {
   }
 
   // 두 인풋을 모두 입력해야 제출할 수 있다.
-  const canSubmit = email.trim() !== "" && password !== "" && !submitting;
+  const canSubmit = password !== "" && passwordConfirm !== "" && !submitting;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
 
+    // 비밀번호 일치 여부 확인
+    if (password !== passwordConfirm) {
+      showToast("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
     setSubmitting(true);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
       showToast(toKoreanError(error.message));
@@ -65,7 +72,7 @@ export default function LoginForm() {
       return;
     }
 
-    // 로그인 성공 → 인덱스 페이지로 이동
+    // 재설정 성공 → 로그인된 상태로 인덱스 페이지로 이동
     router.push("/");
   }
 
@@ -80,38 +87,38 @@ export default function LoginForm() {
       >
         <div className="flex flex-col gap-2">
           <label
-            htmlFor="login-email"
+            htmlFor="reset-password"
             className="text-sm font-bold text-[var(--text)]"
           >
-            이메일
+            새 비밀번호
           </label>
           <input
-            id="login-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            id="reset-password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="새 비밀번호를 입력하세요"
             className="toss-input px-4 py-3.5 text-[17px]"
           />
         </div>
 
         <div className="flex flex-col gap-2">
           <label
-            htmlFor="login-password"
+            htmlFor="reset-password-confirm"
             className="text-sm font-bold text-[var(--text)]"
           >
-            비밀번호
+            새 비밀번호 확인
           </label>
           <input
-            id="login-password"
-            name="password"
+            id="reset-password-confirm"
+            name="passwordConfirm"
             type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호를 입력하세요"
+            autoComplete="new-password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="새 비밀번호를 다시 입력하세요"
             className="toss-input px-4 py-3.5 text-[17px]"
           />
         </div>
@@ -121,30 +128,9 @@ export default function LoginForm() {
           disabled={!canSubmit}
           className="btn-primary mt-2 w-full px-5 py-3.5 text-[17px] disabled:cursor-not-allowed disabled:bg-[var(--disabled)] disabled:text-[var(--text-sub)]"
         >
-          {submitting ? "로그인 중…" : "로그인"}
+          {submitting ? "변경 중…" : "비밀번호 변경"}
         </button>
       </form>
-
-      {/* 비밀번호 찾기 페이지로 이동 */}
-      <p className="mt-6 text-center">
-        <Link
-          href="/forgot-password"
-          className="text-[15px] text-[var(--text-sub)] hover:text-[var(--text)] hover:underline"
-        >
-          비밀번호를 잊으셨나요?
-        </Link>
-      </p>
-
-      {/* 회원가입 페이지로 이동 */}
-      <p className="mt-2 text-center text-[15px] text-[var(--text-sub)]">
-        아직 계정이 없으신가요?{" "}
-        <Link
-          href="/signup"
-          className="font-bold text-[var(--accent)] hover:underline"
-        >
-          회원가입
-        </Link>
-      </p>
     </>
   );
 }
