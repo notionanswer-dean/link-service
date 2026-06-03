@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,14 +27,9 @@ export default function RootLayout({
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Header />
-        {/* 헤더 아래로 사이드바 + 페이지 본문을 나란히 배치 (모든 페이지 공유) */}
-        <div className="flex flex-1 flex-col sm:flex-row">
-          <Sidebar />
-          {children}
-        </div>
-      </body>
+      {/* 헤더/사이드바 셸은 (main) 그룹 레이아웃에서만 렌더링한다.
+          (auth) 그룹(로그인·회원가입)은 셸 없이 본문만 표시된다. */}
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
