@@ -26,6 +26,8 @@ const EMPTY_LINKS: LinkItem[] = [];
 let state: StoreState = { folders: EMPTY_FOLDERS, links: EMPTY_LINKS };
 let foldersLoaded = false;
 let linksLoaded = false;
+// 현재 로그인된 사용자 id — 이 값으로 데이터를 필터링한다(미로그인이면 null).
+let currentUserId: string | null = null;
 const listeners = new Set<() => void>();
 
 // timestamptz(ISO) → 저장 일자 표시 형식(YYYY.MM.DD)으로 변환한다.
@@ -39,12 +41,15 @@ function formatSavedAt(iso: string): string {
 
 // 첫 구독 시(클라이언트) Supabase에서 폴더를 한 번 로드한다.
 // folders 테이블에 보관된 순서(id 오름차순 = 추가된 순서)대로 가져온다.
+// 현재 로그인된 사용자의 폴더만 가져온다.
 async function loadFolders() {
   if (foldersLoaded) return;
+  if (!currentUserId) return; // 미로그인 상태에선 로드하지 않는다
   foldersLoaded = true;
   const { data, error } = await supabase
     .from("folders")
     .select("id, name")
+    .eq("user_id", currentUserId)
     .order("id", { ascending: true });
   if (error) {
     foldersLoaded = false; // 실패 시 다음 구독에서 재시도 허용
@@ -61,12 +66,15 @@ async function loadFolders() {
 
 // 첫 구독 시(클라이언트) Supabase에서 링크를 한 번 로드한다.
 // 최근에 추가한 링크가 위로 오도록 created_at 내림차순으로 가져온다.
+// 현재 로그인된 사용자의 링크만 가져온다.
 async function loadLinks() {
   if (linksLoaded) return;
+  if (!currentUserId) return; // 미로그인 상태에선 로드하지 않는다
   linksLoaded = true;
   const { data, error } = await supabase
     .from("links")
     .select("id, url, title, description, thumbnail_url, folder_id, created_at")
+    .eq("user_id", currentUserId)
     .order("created_at", { ascending: false });
   if (error) {
     linksLoaded = false; // 실패 시 다음 구독에서 재시도 허용
@@ -102,6 +110,30 @@ function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+// 인증 상태(로그인/로그아웃/계정 변경)가 바뀌면 데이터를 처음부터 다시 불러온다.
+// 초기 세션 복원, 로그인, 로그아웃, 다른 계정으로 전환 시 모두 발화한다.
+// Supabase 권장에 따라 콜백 안에서의 추가 supabase 호출은 setTimeout으로 분리한다.
+supabase.auth.onAuthStateChange((_event, session) => {
+  const nextUserId = session?.user?.id ?? null;
+  // 같은 사용자면(토큰 자동 갱신 등) 다시 불러올 필요가 없다.
+  if (nextUserId === currentUserId) return;
+
+  currentUserId = nextUserId;
+  // 로드 캐시와 데이터를 초기화해, 새 계정 기준으로 처음부터 다시 불러오게 한다.
+  foldersLoaded = false;
+  linksLoaded = false;
+  state = { folders: EMPTY_FOLDERS, links: EMPTY_LINKS };
+  emit();
+
+  // 로그인된 경우에만 새 사용자의 데이터를 불러온다.
+  if (currentUserId) {
+    setTimeout(() => {
+      loadFolders();
+      loadLinks();
+    }, 0);
+  }
+});
 
 // ── 액션 ─────────────────────────────────────────────
 
