@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import ResetPasswordForm from "@/components/ResetPasswordForm";
 
 export const metadata: Metadata = {
-  title: "비밀번호 재설정 · 한입 링크",
+  title: "비밀번호 재설정",
 };
 
 export default function ResetPasswordPage() {

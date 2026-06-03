@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import LoginForm from "@/components/LoginForm";
 
 export const metadata: Metadata = {
-  title: "로그인 · 한입 링크",
+  title: "로그인",
 };
 
 export default function LoginPage() {

@@ -12,9 +12,40 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// OG 이미지 등 상대경로 메타 자산의 절대 URL 기준. 배포 도메인이 있으면 환경변수로 덮어쓴다.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const description = "북마크를 폴더로 정리하는 한입 링크 서비스";
+
 export const metadata: Metadata = {
-  title: "한입 링크",
-  description: "북마크를 폴더로 정리하는 한입 링크 서비스",
+  metadataBase: new URL(siteUrl),
+  // 각 페이지는 title만 지정하면 "%s · 한입 링크" 형태로 합쳐진다.
+  title: {
+    default: "한입 링크",
+    template: "%s · 한입 링크",
+  },
+  description,
+  // 파비콘은 app/favicon.ico를 Next.js가 자동으로 인식한다.
+  openGraph: {
+    type: "website",
+    siteName: "한입 링크",
+    title: "한입 링크",
+    description,
+    locale: "ko_KR",
+    images: [
+      {
+        url: "/thumbnail.png", // public/thumbnail.png
+        width: 2400,
+        height: 1260,
+        alt: "한입 링크",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "한입 링크",
+    description,
+    images: ["/thumbnail.png"],
+  },
 };
 
 export default function RootLayout({

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import ForgotPasswordForm from "@/components/ForgotPasswordForm";
 
 export const metadata: Metadata = {
-  title: "비밀번호 찾기 · 한입 링크",
+  title: "비밀번호 찾기",
 };
 
 export default function ForgotPasswordPage() {
