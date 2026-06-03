@@ -261,12 +261,21 @@ export async function updateLink(
   return true;
 }
 
-/** 링크를 삭제한다. */
-export function deleteLink(linkId: string) {
+/**
+ * 링크를 Supabase links 테이블에서 삭제하고 로컬 목록에 반영한다.
+ * 성공하면 true, 실패하면 false를 반환한다.
+ */
+export async function deleteLink(linkId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("links")
+    .delete()
+    .eq("id", Number(linkId));
+  if (error) return false;
   setState({
     ...state,
     links: state.links.filter((link) => link.id !== linkId),
   });
+  return true;
 }
 
 // ── 훅 ───────────────────────────────────────────────
